@@ -1,0 +1,36 @@
+# Negative test: team-c has no gateway-access=shared label, so the Gateway must not accept this ListenerSet.
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: team-c-listeners
+  namespace: team-c
+spec:
+  parentRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shared-public
+    namespace: platform
+  listeners:
+    - name: team-c-http
+      hostname: team-c.example.com
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces: { from: Same }
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: team-c-route
+  namespace: team-c
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: ListenerSet
+      name: team-c-listeners
+      sectionName: team-c-http
+  hostnames: ["team-c.example.com"]
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80

@@ -1,0 +1,52 @@
+# Platform team: owns the Gateways and decides which namespaces may attach ListenerSets.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: shared-public
+  namespace: platform
+  annotations:
+    alb.networking.azure.io/alb-id: AGC_ID
+spec:
+  gatewayClassName: azure-alb-external
+  allowedListeners:
+    namespaces:
+      from: Selector
+      selector:
+        matchLabels:
+          gateway-access: shared
+  listeners:
+    - name: platform-http
+      hostname: platform.example.com
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces: { from: Same }
+  addresses:
+    - type: alb.networking.azure.io/alb-frontend
+      value: fe-public
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: shared-private
+  namespace: platform
+  annotations:
+    alb.networking.azure.io/alb-id: AGC_ID
+spec:
+  gatewayClassName: azure-alb-internal
+  allowedListeners:
+    namespaces:
+      from: Selector
+      selector:
+        matchLabels:
+          gateway-access: shared
+  listeners:
+    - name: platform-http
+      hostname: platform.internal.example.com
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces: { from: Same }
+  addresses:
+    - type: alb.networking.azure.io/alb-frontend
+      value: fe-private

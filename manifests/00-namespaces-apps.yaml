@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-a
+  labels:
+    gateway-access: shared
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-b
+  labels:
+    gateway-access: shared
+---
+# No gateway-access label: this namespace must not be able to attach a ListenerSet.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-c
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: team-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: backend }
+  template:
+    metadata:
+      labels: { app: backend }
+    spec:
+      containers:
+        - name: backend
+          image: registry.k8s.io/echoserver:1.10
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: team-a
+spec:
+  selector: { app: backend }
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: team-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: backend }
+  template:
+    metadata:
+      labels: { app: backend }
+    spec:
+      containers:
+        - name: backend
+          image: registry.k8s.io/echoserver:1.10
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: team-b
+spec:
+  selector: { app: backend }
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: team-c
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: backend }
+  template:
+    metadata:
+      labels: { app: backend }
+    spec:
+      containers:
+        - name: backend
+          image: registry.k8s.io/echoserver:1.10
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: team-c
+spec:
+  selector: { app: backend }
+  ports:
+    - port: 80
+      targetPort: 8080

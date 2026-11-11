@@ -1,0 +1,83 @@
+# Experiment: per-team HTTPS listeners in the ListenerSets, each with its own certificate Secret
+# in the team's own namespace (self-signed certificates, create them before applying).
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: team-a-tls
+  namespace: team-a
+spec:
+  parentRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shared-public
+    namespace: platform
+  listeners:
+    - name: team-a-https
+      hostname: tls-a.example.com
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: tls-a
+      allowedRoutes:
+        namespaces: { from: Same }
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: team-a-tls-route
+  namespace: team-a
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: ListenerSet
+      name: team-a-tls
+      sectionName: team-a-https
+  hostnames: ["tls-a.example.com"]
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: team-b-tls
+  namespace: team-b
+spec:
+  parentRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shared-public
+    namespace: platform
+  listeners:
+    - name: team-b-https
+      hostname: tls-b.example.com
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: tls-b
+      allowedRoutes:
+        namespaces: { from: Same }
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: team-b-tls-route
+  namespace: team-b
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: ListenerSet
+      name: team-b-tls
+      sectionName: team-b-https
+  hostnames: ["tls-b.example.com"]
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80

@@ -1,0 +1,29 @@
+# Each team protects its own route with its own WAF policy, from its own namespace.
+# WAF_TEAM_A_ID and WAF_TEAM_B_ID are substituted from `tofu output waf_policy_ids`.
+apiVersion: alb.networking.azure.io/v1
+kind: WebApplicationFirewallPolicy
+metadata:
+  name: waf-team-a
+  namespace: team-a
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: team-a-route
+    namespace: team-a
+  webApplicationFirewall:
+    id: WAF_TEAM_A_ID
+---
+apiVersion: alb.networking.azure.io/v1
+kind: WebApplicationFirewallPolicy
+metadata:
+  name: waf-team-b
+  namespace: team-b
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: team-b-route
+    namespace: team-b
+  webApplicationFirewall:
+    id: WAF_TEAM_B_ID

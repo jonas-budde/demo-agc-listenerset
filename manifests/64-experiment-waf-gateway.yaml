@@ -1,0 +1,15 @@
+# Experiment: platform baseline WAF policy on the shared Gateway (blocks /blocked-platform).
+# WAF_PLATFORM_ID is substituted from `tofu output waf_policy_ids`.
+apiVersion: alb.networking.azure.io/v1
+kind: WebApplicationFirewallPolicy
+metadata:
+  name: waf-platform-baseline
+  namespace: platform
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shared-public
+    namespace: platform
+  webApplicationFirewall:
+    id: WAF_PLATFORM_ID

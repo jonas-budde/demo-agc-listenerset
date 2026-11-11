@@ -1,0 +1,15 @@
+# Experiment: the docs do not list ListenerSet as a WAF policy target. Apply this instead of the
+# team-a policy in 50-team-waf.yaml (delete waf-team-a first) to see whether the ALB Controller accepts it.
+apiVersion: alb.networking.azure.io/v1
+kind: WebApplicationFirewallPolicy
+metadata:
+  name: waf-team-a-listenerset
+  namespace: team-a
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
+    name: team-a-listeners
+    namespace: team-a
+  webApplicationFirewall:
+    id: WAF_TEAM_A_ID
