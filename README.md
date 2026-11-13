@@ -43,3 +43,7 @@ Experiments (results are in the blog post, apply them after the base setup):
 - `62-experiment-waf-both.yaml`: WAF policy on the ListenerSet and on the HTTPRoute at the same time.
 - `63-team-tls.yaml`: per-team HTTPS listeners with a certificate Secret in the team's own namespace (create the Secrets first, they are not in the repo).
 - `64-experiment-waf-gateway.yaml`: platform WAF policy on the Gateway.
+
+## Hostname policy per team
+
+`hostname-policy/` restricts which hostnames a team may use with a ValidatingAdmissionPolicy (CEL). It only needs the Gateway API CRDs (v1.7.0 standard channel), not AGC. Apply `00-namespaces.yaml`, `10-policy.yaml` and `20-valid.yaml`, then each file in `denied/`. The recorded output is in `docs/outputs-hostname-policy.txt`.

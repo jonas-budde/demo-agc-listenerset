@@ -1,0 +1,12 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: c-any
+  namespace: team-c
+spec:
+  parentRef: { group: gateway.networking.k8s.io, kind: Gateway, name: shared-public, namespace: platform }
+  listeners:
+    - name: l1
+      hostname: team-c.example.com
+      port: 80
+      protocol: HTTP

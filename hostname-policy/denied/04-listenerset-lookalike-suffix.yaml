@@ -1,0 +1,12 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: b-lookalike
+  namespace: team-b
+spec:
+  parentRef: { group: gateway.networking.k8s.io, kind: Gateway, name: shared-public, namespace: platform }
+  listeners:
+    - name: l1
+      hostname: evil-team-b.example.com
+      port: 80
+      protocol: HTTP

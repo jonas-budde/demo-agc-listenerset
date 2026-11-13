@@ -1,0 +1,83 @@
+# Tested 2026-11-13, AKS 1.36.5 (germanywestcentral), Gateway API CRDs v1.7.0 standard channel, no Gateway controller installed
+
+$ kubectl apply -f 00-namespaces.yaml
+namespace/team-a created
+namespace/team-b created
+namespace/team-c created
+
+$ kubectl apply -f 10-policy.yaml
+validatingadmissionpolicy.admissionregistration.k8s.io/team-hostnames created
+validatingadmissionpolicybinding.admissionregistration.k8s.io/team-hostnames created
+
+$ kubectl apply -f 20-valid.yaml   (team-a, own domain)
+listenerset.gateway.networking.k8s.io/team-a-listeners created
+httproute.gateway.networking.k8s.io/team-a-route created
+
+$ kubectl get listenersets,httproutes -A
+NAMESPACE   NAME                                                     ACCEPTED   PROGRAMMED   AGE
+team-a      listenerset.gateway.networking.k8s.io/team-a-listeners   Unknown    Unknown      0s
+
+NAMESPACE   NAME                                               HOSTNAMES                    AGE
+team-a      httproute.gateway.networking.k8s.io/team-a-route   ["api.team-a.example.com"]   1s
+
+$ kubectl apply -f denied/01-listenerset-foreign-hostname.yaml
+The listenersets "b-uses-a" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: hostname not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/02-listenerset-wildcard-outside.yaml
+The listenersets "b-wildcard" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: hostname not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/03-listenerset-no-hostname.yaml
+The listenersets "b-no-host" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: hostname not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/04-listenerset-lookalike-suffix.yaml
+The listenersets "b-lookalike" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: hostname not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/05-listenerset-unlabeled-namespace.yaml
+The listenersets "c-any" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: namespace has no hostname-suffix label, so it may not define hostnames
+
+$ kubectl apply -f denied/06-httproute-foreign-hostname.yaml
+The httproutes "b-uses-a" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: hostname not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/07-httproute-no-hostname.yaml
+The httproutes "b-catchall" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: hostname not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl -n team-a patch listenerset team-a-listeners (UPDATE to a foreign hostname)
+The listenersets "team-a-listeners" is invalid: : ValidatingAdmissionPolicy 'team-hostnames' with binding 'team-hostnames' denied request: hostname not allowed in this namespace, must be team-a.example.com or end with .team-a.example.com
+
+$ kubectl get listenersets,httproutes -A   (final state)
+NAMESPACE   NAME                                                     ACCEPTED   PROGRAMMED   AGE
+team-a      listenerset.gateway.networking.k8s.io/team-a-listeners   Unknown    Unknown      2s
+
+NAMESPACE   NAME                                               HOSTNAMES                    AGE
+team-a      httproute.gateway.networking.k8s.io/team-a-route   ["api.team-a.example.com"]   2s
+
+$ kubectl get validatingadmissionpolicy,validatingadmissionpolicybinding
+NAME                                                                                                  VALIDATIONS   PARAMKIND   AGE
+validatingadmissionpolicy.admissionregistration.k8s.io/aks-managed-deny-endpoints-wireserver-ip       1             <unset>     3m28s
+validatingadmissionpolicy.admissionregistration.k8s.io/aks-managed-deny-endpointslice-wireserver-ip   1             <unset>     3m28s
+validatingadmissionpolicy.admissionregistration.k8s.io/aks-managed-deny-svc-binding-wireserver-ip     5             <unset>     3m28s
+validatingadmissionpolicy.admissionregistration.k8s.io/aks-managed-protect-kubernetes-endpoints       1             <unset>     3m28s
+validatingadmissionpolicy.admissionregistration.k8s.io/aks-managed-protect-kubernetes-endpointslice   1             <unset>     3m28s
+validatingadmissionpolicy.admissionregistration.k8s.io/aks-managed-protect-live-patching-config       1             <unset>     3m27s
+validatingadmissionpolicy.admissionregistration.k8s.io/safe-upgrades.gateway.networking.k8s.io        2             <unset>     55s
+validatingadmissionpolicy.admissionregistration.k8s.io/team-hostnames                                 2             <unset>     18s
+
+NAME                                                                                                                 POLICYNAME                                     PARAMREF   AGE
+validatingadmissionpolicybinding.admissionregistration.k8s.io/aks-managed-deny-endpoints-wireserver-ip-binding       aks-managed-deny-endpoints-wireserver-ip       <unset>    3m28s
+validatingadmissionpolicybinding.admissionregistration.k8s.io/aks-managed-deny-endpointslice-wireserver-ip-binding   aks-managed-deny-endpointslice-wireserver-ip   <unset>    3m28s
+validatingadmissionpolicybinding.admissionregistration.k8s.io/aks-managed-deny-svc-binding-wireserver-ip-binding     aks-managed-deny-svc-binding-wireserver-ip     <unset>    3m28s
+validatingadmissionpolicybinding.admissionregistration.k8s.io/aks-managed-protect-kubernetes-endpoints-binding       aks-managed-protect-kubernetes-endpoints       <unset>    3m28s
+validatingadmissionpolicybinding.admissionregistration.k8s.io/aks-managed-protect-kubernetes-endpointslice-binding   aks-managed-protect-kubernetes-endpointslice   <unset>    3m28s
+validatingadmissionpolicybinding.admissionregistration.k8s.io/aks-managed-protect-live-patching-config-binding       aks-managed-protect-live-patching-config       <unset>    3m27s
+validatingadmissionpolicybinding.admissionregistration.k8s.io/safe-upgrades.gateway.networking.k8s.io                safe-upgrades.gateway.networking.k8s.io        <unset>    55s
+validatingadmissionpolicybinding.admissionregistration.k8s.io/team-hostnames                                         team-hostnames                                 <unset>    18s
+
+$ kubectl apply -f allowed-wildcard.yaml   (wildcard inside the team domain)
+httproute.gateway.networking.k8s.io/team-a-wildcard created
+NAMESPACE   NAME              HOSTNAMES                    AGE
+team-a      team-a-route      ["api.team-a.example.com"]   20s
+team-a      team-a-wildcard   ["*.team-a.example.com"]     0s
+NAME     STATUS   AGE   LABELS
+team-a   Active   36s   hostname-suffix=team-a.example.com,kubernetes.io/metadata.name=team-a
+team-b   Active   36s   hostname-suffix=team-b.example.com,kubernetes.io/metadata.name=team-b
+team-c   Active   36s   kubernetes.io/metadata.name=team-c

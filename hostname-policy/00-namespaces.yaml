@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-a
+  labels:
+    hostname-suffix: team-a.example.com
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-b
+  labels:
+    hostname-suffix: team-b.example.com
+---
+# No hostname-suffix label: this namespace may not use any hostname.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-c
