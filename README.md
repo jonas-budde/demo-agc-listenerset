@@ -47,3 +47,5 @@ Experiments (results are in the blog post, apply them after the base setup):
 ## Hostname policy per team
 
 `hostname-policy/` restricts which hostnames a team may use with a ValidatingAdmissionPolicy (CEL). It only needs the Gateway API CRDs (v1.7.0 standard channel), not AGC. Apply `00-namespaces.yaml`, `10-policy.yaml` and `20-valid.yaml`, then each file in `denied/`. The recorded output is in `docs/outputs-hostname-policy.txt`.
+
+The same rule as Gatekeeper is in `hostname-policy/gatekeeper/`. With the AKS Azure Policy add-on, `kubectl apply` of a ConstraintTemplate is rejected, so the template has to be wrapped in an Azure Policy definition (`30-azure-policy-rule.json`). Output in `docs/outputs-hostname-policy-gatekeeper.txt`.

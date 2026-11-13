@@ -1,0 +1,44 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: teamhostnames
+spec:
+  crd:
+    spec:
+      names:
+        kind: TeamHostnames
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            suffix:
+              type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package teamhostnames
+
+        violation[{"msg": msg}] {
+          h := hostnames[_]
+          not allowed(h)
+          msg := sprintf("hostname '%v' not allowed in this namespace, must be %v or end with .%v", [h, input.parameters.suffix, input.parameters.suffix])
+        }
+
+        hostnames[h] {
+          input.review.kind.kind == "ListenerSet"
+          l := input.review.object.spec.listeners[_]
+          h := object.get(l, "hostname", "")
+        }
+
+        hostnames[h] {
+          input.review.kind.kind == "HTTPRoute"
+          h := input.review.object.spec.hostnames[_]
+        }
+
+        hostnames[""] {
+          input.review.kind.kind == "HTTPRoute"
+          not input.review.object.spec.hostnames
+        }
+
+        allowed(h) { h == input.parameters.suffix }
+        allowed(h) { endswith(h, concat("", [".", input.parameters.suffix])) }

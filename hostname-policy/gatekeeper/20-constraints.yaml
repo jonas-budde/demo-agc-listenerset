@@ -1,0 +1,28 @@
+# One constraint per team: Gatekeeper does not see namespace labels without extra sync config.
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: TeamHostnames
+metadata:
+  name: team-a
+spec:
+  enforcementAction: deny
+  match:
+    namespaces: ["team-a"]
+    kinds:
+      - apiGroups: ["gateway.networking.k8s.io"]
+        kinds: ["ListenerSet", "HTTPRoute"]
+  parameters:
+    suffix: team-a.example.com
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: TeamHostnames
+metadata:
+  name: team-b
+spec:
+  enforcementAction: deny
+  match:
+    namespaces: ["team-b"]
+    kinds:
+      - apiGroups: ["gateway.networking.k8s.io"]
+        kinds: ["ListenerSet", "HTTPRoute"]
+  parameters:
+    suffix: team-b.example.com

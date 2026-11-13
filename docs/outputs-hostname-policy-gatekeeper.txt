@@ -1,0 +1,71 @@
+# Tested 2026-11-14, AKS 1.36.5 with Azure Policy add-on (Gatekeeper v3.23.1), Gateway API CRDs v1.7.0
+
+## Step 1: ConstraintTemplate applied directly with kubectl
+
+$ kubectl apply -f 00-namespaces.yaml
+namespace/team-a created
+namespace/team-b created
+namespace/team-c created
+
+$ kubectl apply -f gatekeeper/10-template.yaml  (own ConstraintTemplate, directly with kubectl)
+Error from server: error when creating "gatekeeper/10-template.yaml": admission webhook "byovalidation.policy.azure.com" denied the request: This cluster is governed by Azure Policy. Policies must be created through Azure. For more information, visit https://aka.ms/K8sAzurePolicy.
+
+$ kubectl apply -f gatekeeper/20-constraints.yaml
+resource mapping not found for name: "team-a" namespace: "" from "gatekeeper/20-constraints.yaml": no matches for kind "TeamHostnames" in version "constraints.gatekeeper.sh/v1beta1"
+ensure CRDs are installed first
+resource mapping not found for name: "team-b" namespace: "" from "gatekeeper/20-constraints.yaml": no matches for kind "TeamHostnames" in version "constraints.gatekeeper.sh/v1beta1"
+ensure CRDs are installed first
+
+$ kubectl get constrainttemplates,teamhostnames
+error: the server doesn't have a resource type "teamhostnames"
+
+
+## Step 2: same template as Azure Policy custom definition, assigned once per team (sync took about 15 minutes)
+
+$ kubectl get constrainttemplates | grep teamhostnames
+teamhostnames                      2m25s
+
+$ kubectl get teamhostnames
+NAME                                             ENFORCEMENT-ACTION   TOTAL-VIOLATIONS
+azurepolicy-teamhostnames-1fac0361e2206d2a64b3   deny                 
+azurepolicy-teamhostnames-63531fd568f3852a04aa   deny                 
+
+$ kubectl apply -f 20-valid.yaml
+listenerset.gateway.networking.k8s.io/team-a-listeners created
+httproute.gateway.networking.k8s.io/team-a-route created
+
+$ kubectl apply -f denied/01-listenerset-foreign-hostname.yaml
+Error from server (Forbidden): error when creating "denied/01-listenerset-foreign-hostname.yaml": admission webhook "validation.gatekeeper.sh" denied the request: [azurepolicy-teamhostnames-1fac0361e2206d2a64b3] hostname 'api.team-a.example.com' not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/02-listenerset-wildcard-outside.yaml
+Error from server (Forbidden): error when creating "denied/02-listenerset-wildcard-outside.yaml": admission webhook "validation.gatekeeper.sh" denied the request: [azurepolicy-teamhostnames-1fac0361e2206d2a64b3] hostname '*.example.com' not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/03-listenerset-no-hostname.yaml
+Error from server (Forbidden): error when creating "denied/03-listenerset-no-hostname.yaml": admission webhook "validation.gatekeeper.sh" denied the request: [azurepolicy-teamhostnames-1fac0361e2206d2a64b3] hostname '' not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/04-listenerset-lookalike-suffix.yaml
+Error from server (Forbidden): error when creating "denied/04-listenerset-lookalike-suffix.yaml": admission webhook "validation.gatekeeper.sh" denied the request: [azurepolicy-teamhostnames-1fac0361e2206d2a64b3] hostname 'evil-team-b.example.com' not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/05-listenerset-unlabeled-namespace.yaml
+listenerset.gateway.networking.k8s.io/c-any created
+
+$ kubectl apply -f denied/06-httproute-foreign-hostname.yaml
+Error from server (Forbidden): error when creating "denied/06-httproute-foreign-hostname.yaml": admission webhook "validation.gatekeeper.sh" denied the request: [azurepolicy-teamhostnames-1fac0361e2206d2a64b3] hostname 'api.team-a.example.com' not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f denied/07-httproute-no-hostname.yaml
+Error from server (Forbidden): error when creating "denied/07-httproute-no-hostname.yaml": admission webhook "validation.gatekeeper.sh" denied the request: [azurepolicy-teamhostnames-1fac0361e2206d2a64b3] hostname '' not allowed in this namespace, must be team-b.example.com or end with .team-b.example.com
+
+$ kubectl apply -f allowed-wildcard.yaml
+httproute.gateway.networking.k8s.io/team-a-wildcard created
+
+$ kubectl -n team-a patch listenerset team-a-listeners (UPDATE to a foreign hostname)
+Error from server (Forbidden): admission webhook "validation.gatekeeper.sh" denied the request: [azurepolicy-teamhostnames-63531fd568f3852a04aa] hostname 'api.team-b.example.com' not allowed in this namespace, must be team-a.example.com or end with .team-a.example.com
+
+$ kubectl get listenersets,httproutes -A
+NAMESPACE   NAME                                                     ACCEPTED   PROGRAMMED   AGE
+team-a      listenerset.gateway.networking.k8s.io/team-a-listeners   Unknown    Unknown      2s
+team-c      listenerset.gateway.networking.k8s.io/c-any              Unknown    Unknown      1s
+
+NAMESPACE   NAME                                                  HOSTNAMES                    AGE
+team-a      httproute.gateway.networking.k8s.io/team-a-route      ["api.team-a.example.com"]   2s
+team-a      httproute.gateway.networking.k8s.io/team-a-wildcard   ["*.team-a.example.com"]     0s

@@ -1,0 +1,58 @@
+{
+  "mode": "Microsoft.Kubernetes.Data",
+  "parameters": {
+    "effect": {
+      "type": "String",
+      "allowedValues": [
+        "audit",
+        "deny",
+        "disabled"
+      ],
+      "defaultValue": "deny"
+    },
+    "namespaces": {
+      "type": "Array",
+      "defaultValue": []
+    },
+    "excludedNamespaces": {
+      "type": "Array",
+      "defaultValue": [
+        "kube-system",
+        "gatekeeper-system",
+        "azure-arc"
+      ]
+    },
+    "suffix": {
+      "type": "String"
+    }
+  },
+  "policyRule": {
+    "if": {
+      "field": "type",
+      "in": [
+        "Microsoft.ContainerService/managedClusters"
+      ]
+    },
+    "then": {
+      "effect": "[parameters('effect')]",
+      "details": {
+        "templateInfo": {
+          "sourceType": "Base64Encoded",
+          "content": "YXBpVmVyc2lvbjogdGVtcGxhdGVzLmdhdGVrZWVwZXIuc2gvdjEKa2luZDogQ29uc3RyYWludFRlbXBsYXRlCm1ldGFkYXRhOgogIG5hbWU6IHRlYW1ob3N0bmFtZXMKc3BlYzoKICBjcmQ6CiAgICBzcGVjOgogICAgICBuYW1lczoKICAgICAgICBraW5kOiBUZWFtSG9zdG5hbWVzCiAgICAgIHZhbGlkYXRpb246CiAgICAgICAgb3BlbkFQSVYzU2NoZW1hOgogICAgICAgICAgdHlwZTogb2JqZWN0CiAgICAgICAgICBwcm9wZXJ0aWVzOgogICAgICAgICAgICBzdWZmaXg6CiAgICAgICAgICAgICAgdHlwZTogc3RyaW5nCiAgdGFyZ2V0czoKICAgIC0gdGFyZ2V0OiBhZG1pc3Npb24uazhzLmdhdGVrZWVwZXIuc2gKICAgICAgcmVnbzogfAogICAgICAgIHBhY2thZ2UgdGVhbWhvc3RuYW1lcwoKICAgICAgICB2aW9sYXRpb25beyJtc2ciOiBtc2d9XSB7CiAgICAgICAgICBoIDo9IGhvc3RuYW1lc1tfXQogICAgICAgICAgbm90IGFsbG93ZWQoaCkKICAgICAgICAgIG1zZyA6PSBzcHJpbnRmKCJob3N0bmFtZSAnJXYnIG5vdCBhbGxvd2VkIGluIHRoaXMgbmFtZXNwYWNlLCBtdXN0IGJlICV2IG9yIGVuZCB3aXRoIC4ldiIsIFtoLCBpbnB1dC5wYXJhbWV0ZXJzLnN1ZmZpeCwgaW5wdXQucGFyYW1ldGVycy5zdWZmaXhdKQogICAgICAgIH0KCiAgICAgICAgaG9zdG5hbWVzW2hdIHsKICAgICAgICAgIGlucHV0LnJldmlldy5raW5kLmtpbmQgPT0gIkxpc3RlbmVyU2V0IgogICAgICAgICAgbCA6PSBpbnB1dC5yZXZpZXcub2JqZWN0LnNwZWMubGlzdGVuZXJzW19dCiAgICAgICAgICBoIDo9IG9iamVjdC5nZXQobCwgImhvc3RuYW1lIiwgIiIpCiAgICAgICAgfQoKICAgICAgICBob3N0bmFtZXNbaF0gewogICAgICAgICAgaW5wdXQucmV2aWV3LmtpbmQua2luZCA9PSAiSFRUUFJvdXRlIgogICAgICAgICAgaCA6PSBpbnB1dC5yZXZpZXcub2JqZWN0LnNwZWMuaG9zdG5hbWVzW19dCiAgICAgICAgfQoKICAgICAgICBob3N0bmFtZXNbIiJdIHsKICAgICAgICAgIGlucHV0LnJldmlldy5raW5kLmtpbmQgPT0gIkhUVFBSb3V0ZSIKICAgICAgICAgIG5vdCBpbnB1dC5yZXZpZXcub2JqZWN0LnNwZWMuaG9zdG5hbWVzCiAgICAgICAgfQoKICAgICAgICBhbGxvd2VkKGgpIHsgaCA9PSBpbnB1dC5wYXJhbWV0ZXJzLnN1ZmZpeCB9CiAgICAgICAgYWxsb3dlZChoKSB7IGVuZHN3aXRoKGgsIGNvbmNhdCgiIiwgWyIuIiwgaW5wdXQucGFyYW1ldGVycy5zdWZmaXhdKSkgfQo="
+        },
+        "apiGroups": [
+          "gateway.networking.k8s.io"
+        ],
+        "kinds": [
+          "ListenerSet",
+          "HTTPRoute"
+        ],
+        "namespaces": "[parameters('namespaces')]",
+        "excludedNamespaces": "[parameters('excludedNamespaces')]",
+        "values": {
+          "suffix": "[parameters('suffix')]"
+        }
+      }
+    }
+  }
+}
